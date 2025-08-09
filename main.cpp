@@ -32,49 +32,66 @@ int main()
     return -1;
   }
 
+  sf::View view{sf::FloatRect{{0.f, 0.f}, {WINDOW_WIDTH, WINDOW_HEIGHT}}};
+  window.setView(view);
+
+  float zoomFactor = 1.f;
+
   b2DebugDraw debugDraw = b2DefaultDebugDraw();
-  debugDraw.context = &window;
+  auto contextToPass = std::make_pair(&window, zoomFactor);
+  debugDraw.context = &contextToPass;
   debugDraw.drawShapes = true;
   debugDraw.drawJoints = true;
   debugDraw.DrawPointFcn = [](b2Vec2 p, float size, b2HexColor color, void* context) {
+    assert(context);
+    auto ctx = static_cast<std::pair<sf::RenderWindow*, float>*>(context);
+
     sf::CircleShape point {size};
     point.setOrigin({point.getGlobalBounds().size.x / 2.f, point.getGlobalBounds().size.x / 2.f});
     point.setPosition({p.x * PPM, p.y * PPM});
     point.setFillColor(sf::Color::Transparent);
     point.setOutlineColor(sf::Color::Magenta);
-    point.setOutlineThickness(1.f);
-    reinterpret_cast<sf::RenderWindow*>(context)->draw(point);
+
+    point.setOutlineThickness(-1.f / ctx->second);
+    ctx->first->draw(point);
   };
   debugDraw.DrawSolidPolygonFcn = [](b2Transform transform, const b2Vec2* vertices, int vertexCount, float radius, b2HexColor color, void* context) {
+    assert(context);
+    auto ctx = static_cast<std::pair<sf::RenderWindow*, float>*>(context);
+
     sf::ConvexShape polygon{static_cast<size_t>(vertexCount)};
     for (int i = 0; i < vertexCount; ++i) {
       polygon.setPoint(i, {vertices[i].x * PPM, vertices[i].y * PPM});
     }
 
-    // std::println("{}", vertexCount);
-
     polygon.setPosition({transform.p.x * PPM, transform.p.y * PPM});
     polygon.setRotation(sf::radians(b2Rot_GetAngle(transform.q)));
     polygon.setFillColor(sf::Color::Transparent);
     polygon.setOutlineColor(sf::Color::Cyan);
-    polygon.setOutlineThickness(-1.f);
-    reinterpret_cast<sf::RenderWindow*>(context)->draw(polygon);
+    polygon.setOutlineThickness(-1.f / ctx->second);
+    ctx->first->draw(polygon);
   };
   debugDraw.DrawSolidCircleFcn = [](b2Transform transform, float radius, b2HexColor color, void* context) {
+    assert(context);
+    auto ctx = static_cast<std::pair<sf::RenderWindow*, float>*>(context);
+
     sf::CircleShape circle(radius * PPM);
     circle.setPosition({transform.p.x * PPM, transform.p.y * PPM});
-    circle.setOutlineThickness(-1.f);
+    circle.setOutlineThickness(-1.f / ctx->second);
     circle.setFillColor(sf::Color::Transparent);
     circle.setOutlineColor(sf::Color::Yellow);
     circle.setOrigin({circle.getLocalBounds().size.x / 2.f, circle.getLocalBounds().size.y / 2.f});
-    reinterpret_cast<sf::RenderWindow*>(context)->draw(circle);
+    ctx->first->draw(circle);
   };
 
   debugDraw.DrawSegmentFcn = [](b2Vec2 p1, b2Vec2 p2, b2HexColor color, void* context){
+    assert(context);
+    auto ctx = static_cast<std::pair<sf::RenderWindow*, float>*>(context);
+
     sf::VertexArray lines(sf::PrimitiveType::LineStrip, 2);
     lines[0].position = {p1.x * PPM, p1.y * PPM};
     lines[1].position = {p2.x * PPM, p2.y * PPM};
-    reinterpret_cast<sf::RenderWindow*>(context)->draw(lines);
+    ctx->first->draw(lines);
   };
 
   sf::Clock m_deltaClock;
@@ -129,10 +146,34 @@ int main()
   };
 
   bool updatePhysics {false};
-
-  //sf::View view{sf::FloatRect{{0.f, 0.f}, {WINDOW_WIDTH * 2, WINDOW_HEIGHT * 2}}};
-  //view.setViewport(sf::FloatRect{{0.f, 0.f}, {WINDOW_WIDTH, WINDOW_HEIGHT}});
-  //window.setView(view);
+  bool mousePressed {false};
+  const auto onMousePressed = [&mousePressed](const sf::Event::MouseButtonPressed& button) {
+    if (button.button == sf::Mouse::Button::Right)
+    {
+      mousePressed = true;
+    }
+  };
+  const auto onMouseReleased = [&mousePressed](const sf::Event::MouseButtonReleased& button) {
+    if (button.button == sf::Mouse::Button::Right)
+    {
+      mousePressed = false;
+    }
+  };
+  const auto onMouseMovedRaw = [&mousePressed, &window, &view](const sf::Event::MouseMovedRaw& newPos) {
+    if (mousePressed)
+    {
+      view.setCenter(view.getCenter() - static_cast<sf::Vector2f>(newPos.delta * 3));
+      window.setView(view);
+    }
+  };
+  const auto onMouseScroll = [&zoomFactor, &view, &window](const sf::Event::MouseWheelScrolled& scroll) {
+    if ((zoomFactor > 0.1f && scroll.delta < 0) || (zoomFactor < 4.f && scroll.delta > 0)) {
+      zoomFactor += (scroll.delta / 25.f);
+      std::println("{} {}", scroll.delta, zoomFactor);
+      view.setSize(static_cast<sf::Vector2f>(window.getSize()) * zoomFactor);
+      window.setView(view);
+    }
+  };
 
   window.resetGLStates();
   while(window.isOpen())
@@ -148,7 +189,7 @@ int main()
     window.clear(sf::Color{80, 80, 80});
 
     // Handle all window's events
-    window.handleEvents(onCloseEvent, onKeyPressed, onKeyReleased);
+    window.handleEvents(onCloseEvent, onKeyPressed, onKeyReleased, onMousePressed, onMouseReleased, onMouseMovedRaw, onMouseScroll);
     while(const auto event = window.pollEvent()){
       if (event.has_value())
       {
@@ -162,8 +203,6 @@ int main()
 
     if (updatePhysics) {
       b2World_Step(worldId, 1.f / 60.f, 4);
-
-
     }
 
     // Update shapes
