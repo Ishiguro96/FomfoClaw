@@ -1,10 +1,7 @@
-set (LIB_NAME Shapes)
+set (LIB_NAME GameObjects)
 
 set (SOURCES
-      src/Shape.cpp
-      src/Rect.cpp
-      src/Circle.cpp
-      src/Polygon.cpp
+      src/Claw.cpp
 )
 
 add_library (${LIB_NAME} STATIC ${SOURCES})
@@ -16,7 +13,7 @@ target_link_libraries (${LIB_NAME}
                         PRIVATE SFML::Network
                         PRIVATE SFML::System
                         PRIVATE SFML::Window
-                        PRIVATE EarCut
+                        PRIVATE Shapes
                         PRIVATE Constants
 )
 

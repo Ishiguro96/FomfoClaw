@@ -2,6 +2,7 @@
 #include <optional>
 #include <unordered_set>
 #include <memory>
+#include <cmath>
 
 #include <imgui-SFML.h>
 #include <imgui.h>
@@ -14,14 +15,12 @@
 #include "Shapes/Circle.hpp"
 #include "Shapes/Polygon.hpp"
 
+#include "GameObjects/Claw.hpp"
+
+#include "Constants/SfmlConstants.hpp"
+
 using namespace ish;
-
-// This is a constant to convert from Box2D's units (meters)
-// to SFML pixels (pixels per meter).
-constexpr float PPM = 30.f;
-
-constexpr size_t WINDOW_WIDTH = 1920;
-constexpr size_t WINDOW_HEIGHT = 1080;
+using namespace ish::constants;
 
 int main()
 {
@@ -52,7 +51,7 @@ int main()
     point.setFillColor(sf::Color::Transparent);
     point.setOutlineColor(sf::Color::Magenta);
 
-    point.setOutlineThickness(-1.f / ctx->second);
+    point.setOutlineThickness(std::floor(-1.f / ctx->second));
     ctx->first->draw(point);
   };
   debugDraw.DrawSolidPolygonFcn = [](b2Transform transform, const b2Vec2* vertices, int vertexCount, float radius, b2HexColor color, void* context) {
@@ -68,7 +67,7 @@ int main()
     polygon.setRotation(sf::radians(b2Rot_GetAngle(transform.q)));
     polygon.setFillColor(sf::Color::Transparent);
     polygon.setOutlineColor(sf::Color::Cyan);
-    polygon.setOutlineThickness(-1.f / ctx->second);
+    polygon.setOutlineThickness(std::floor(-1.f / ctx->second));
     ctx->first->draw(polygon);
   };
   debugDraw.DrawSolidCircleFcn = [](b2Transform transform, float radius, b2HexColor color, void* context) {
@@ -77,7 +76,7 @@ int main()
 
     sf::CircleShape circle(radius * PPM);
     circle.setPosition({transform.p.x * PPM, transform.p.y * PPM});
-    circle.setOutlineThickness(-1.f / ctx->second);
+    circle.setOutlineThickness(std::floor(-1.f / ctx->second));
     circle.setFillColor(sf::Color::Transparent);
     circle.setOutlineColor(sf::Color::Yellow);
     circle.setOrigin({circle.getLocalBounds().size.x / 2.f, circle.getLocalBounds().size.y / 2.f});
@@ -175,6 +174,9 @@ int main()
     }
   };
 
+  // Game objects
+  game_objects::Claw claw {worldId};
+
   window.resetGLStates();
   while(window.isOpen())
   {
@@ -207,6 +209,8 @@ int main()
 
     // Update shapes
     groundBox.update();
+
+    claw.update(worldId);
 
     // // Draw shapes
     groundBox.draw(window);

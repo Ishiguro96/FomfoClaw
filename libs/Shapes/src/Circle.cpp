@@ -1,5 +1,9 @@
 #include "Circle.hpp"
 
+#include "Constants/SfmlConstants.hpp"
+
+using namespace ish::constants;
+
 namespace ish::shapes
 {
 

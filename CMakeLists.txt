@@ -27,6 +27,8 @@ target_link_libraries (FomfoClaw
                         PRIVATE SFML::System
                         PRIVATE SFML::Window
                         PRIVATE Shapes
+                        PRIVATE GameObjects
+                        PRIVATE Constants
 )
 
 add_subdirectory (extern)

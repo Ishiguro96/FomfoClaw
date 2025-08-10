@@ -17,6 +17,7 @@ class Shape
     {
       TYPE type = TYPE::DYNAMIC;
       float density = 1.f;
+      bool isSensor = false;
     };
 
     Shape() = default;
@@ -27,6 +28,7 @@ class Shape
 
     virtual void update() = 0;
     virtual void draw(sf::RenderWindow& window) = 0;
+    void setFilter(b2Filter filter);
 
     b2BodyId getBodyId() { return m_bodyId; }
 
@@ -47,7 +49,6 @@ class Shape
 
   protected:
     b2BodyId m_bodyId;
-    static constexpr float PPM = 30.f;
 };
 
 } // namespace

@@ -16,6 +16,8 @@ class Rect : public Shape
     void update() override;
     void draw(sf::RenderWindow& window) override;
 
+    b2ShapeId getShape() { return m_shapeId; }
+
   private:
     b2ShapeId m_shapeId;
     sf::RectangleShape m_sfmlShape;

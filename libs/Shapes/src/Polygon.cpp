@@ -1,10 +1,13 @@
 #include "Polygon.hpp"
 
 #include "mapbox/earcut.hpp"
+#include "Constants/SfmlConstants.hpp"
 
 #include <algorithm>
 #include <print>
 #include <cassert>
+
+using namespace ish::constants;
 
 namespace ish::shapes
 {

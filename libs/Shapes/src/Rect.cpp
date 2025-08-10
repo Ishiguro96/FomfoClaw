@@ -1,5 +1,9 @@
 #include "Rect.hpp"
 
+#include "Constants/SfmlConstants.hpp"
+
+using namespace ish::constants;
+
 namespace ish::shapes
 {
 
@@ -17,6 +21,13 @@ Rect::Rect(const sf::Vector2f& pos, const sf::Vector2f& size, b2WorldId worldId,
   b2Polygon bodyShape = b2MakeBox(size.x / (2.f * PPM), size.y / (2.f * PPM));
   b2ShapeDef shapeDef = b2DefaultShapeDef();
   shapeDef.density = options.density;
+
+  if (options.isSensor)
+  {
+    shapeDef.isSensor = options.isSensor;
+    shapeDef.enableSensorEvents = true;
+  }
+
   m_shapeId = b2CreatePolygonShape(m_bodyId, &shapeDef, &bodyShape);
 
   // Create SFML rectangle shape to represent Box2D's body.
